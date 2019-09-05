@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <set>
-
+#include <ctime>
 #include <inference_engine.hpp>
 
 #include <samples/slog.hpp>
@@ -31,6 +31,105 @@
 #define SYNNEX_DEBUG
 
 using namespace InferenceEngine;
+
+typedef struct location
+{
+    int x = 0;
+    int y = 0;
+}location;
+typedef struct location_area
+{
+    location top;
+    location down;
+}location_area;
+
+typedef struct d_color
+{
+    int R = 0;
+    int G = 0;
+    int B = 0;
+}d_color;
+class D_person
+{
+public:
+    D_person();
+    void init()
+    {
+        _counter = 0;
+        _acc = 0.0;
+    }
+    void set_frametime(time_t time)
+    {
+        _frametime = ctime(&time);
+    }
+    void set_att(std::string s_att)
+    {
+        _att = s_att;
+    }
+    void set_colorUP(int r,int g,int b)
+    {
+        _color_up.R = r;
+        _color_up.G = g;
+        _color_up.B = b;
+    }
+    void set_colorDOWN(int r,int g,int b)
+    {
+        _color_down.R = r;
+        _color_down.G = g;
+        _color_down.B = b;
+    }
+    void set_acc(float f_acc)
+    {
+        _acc = f_acc;
+    }
+    void set_counter(int val)
+    {
+        _counter = val;
+    }
+    void add_counter()
+    {
+        _counter++;
+    }
+
+    int get_id()
+    {
+        return _id;
+    }
+    int get_counter()
+    {
+        return _counter;
+    }
+    std::string get_frametime()
+    {
+        return _frametime;
+    }
+    std::string get_att()
+    {
+        return _att;
+    }
+    d_color get_colorUP()
+    {
+        return _color_up;
+    }
+    d_color get_colorDOWN()
+    {
+        return _color_down;
+    }
+    float get_acc()
+    {
+        return _acc;
+    }
+     
+private:
+    long int _counter;
+    int _id;
+    std::string _frametime;
+    std::string _att;
+    d_color _color_up;
+    d_color _color_down;
+    float _acc;
+    location_area _area;
+};
 
 bool ParseAndCheckCommandLine(int argc, char *argv[]) {
     // ---------------------------Parsing and validation of input args--------------------------------------
@@ -734,6 +833,19 @@ int main(int argc, char *argv[]) {
                     }
 
                     // --------------------------- Process outputs -----------------------------------------
+                    if (!resPersReid.empty()) {
+                        cv::putText(frame,
+                                    resPersReid,
+                                    cv::Point2f(static_cast<float>(result.location.x), static_cast<float>(result.location.y + 30)),
+                                    cv::FONT_HERSHEY_COMPLEX_SMALL,
+                                    0.6,
+                                    cv::Scalar(255, 255, 255));
+
+                        if (FLAGS_r) {
+                            std::cout << "Person Reidentification results:" << resPersReid << std::endl;
+
+                        }
+                    }
                     if (!resPersAttrAndColor.attributes_strings.empty()) {
                         cv::Rect image_area(0, 0, frame.cols, frame.rows);
                         cv::Rect tc_label(result.location.x + result.location.width, result.location.y,
@@ -768,20 +880,16 @@ int main(int argc, char *argv[]) {
                             std::cout << "Person Attributes results: " << output_attribute_string << std::endl;
                             std::cout << "Person top color: " << resPersAttrAndColor.top_color << std::endl;
                             std::cout << "Person bottom color: " << resPersAttrAndColor.bottom_color << std::endl;
+                            time_t now = time(0);
+                            tm *ltm = localtime(&now);
+                            std::cout << "[TIME]" << 1900+ltm->tm_year << "." << ltm->tm_mon << "." << ltm->tm_mday << " " << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec <<
+                            ";[ID]" << resPersReid << 
+                            ";[LOC]" << result.location.x << "," << result.location.y << "," << result.location.width << "," << result.location.height << 
+                            ",[ACC]" << result.confidence << ",[COLOR_UP]" << resPersAttrAndColor.top_color << ",[COLOR_DOWN]" << resPersAttrAndColor.bottom_color <<
+                            ",[ATT]" << output_attribute_string << std::endl;
                         }
                     }
-                    if (!resPersReid.empty()) {
-                        cv::putText(frame,
-                                    resPersReid,
-                                    cv::Point2f(static_cast<float>(result.location.x), static_cast<float>(result.location.y + 30)),
-                                    cv::FONT_HERSHEY_COMPLEX_SMALL,
-                                    0.6,
-                                    cv::Scalar(255, 255, 255));
 
-                        if (FLAGS_r) {
-                            std::cout << "Person Reidentification results:" << resPersReid << std::endl;
-                        }
-                    }
                     cv::rectangle(frame, result.location, cv::Scalar(0, 255, 0), 1);
                 }
             }
