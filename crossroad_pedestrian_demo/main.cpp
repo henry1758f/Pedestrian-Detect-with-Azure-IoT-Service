@@ -830,6 +830,30 @@ int main(int argc, char *argv[]) {
                            matched person is assigned to it. */
                         auto foundId = personReId.findMatchingPerson(reIdVector);
                         resPersReid = "REID: " + std::to_string(foundId);
+
+
+                        // Capture Person Image
+                        cv::Mat personCapture;
+
+                        std::string filename;
+                        filename = "./" + resPersReid +".jpg";
+                        size_t out_w = ((size_t)(result.location.x+result.location.width) > width) ? width - result.location.x -5 : result.location.width;
+                        size_t out_h = ((size_t)(result.location.y+result.location.height) > height) ? height - result.location.y -5 : result.location.height;
+#ifdef SYNNEX_DEBUG
+                        std::cout << "[SYNNEX_DEBUG] TIME w=" << out_w << std::endl;
+                        std::cout << "[SYNNEX_DEBUG] TIME h=" << out_h << std::endl;
+#endif
+                        try
+                        {
+                            personCapture = frame(cv::Rect(result.location.x, result.location.y, out_w ,out_h));
+                            imwrite( filename, personCapture );
+                        }
+                        catch(...) 
+                        {
+                            std::cout << "[SYNNEX_ERROR] exception!!" << std::endl;
+                        }
+                        //
+                        
                     }
 
                     // --------------------------- Process outputs -----------------------------------------
@@ -880,6 +904,8 @@ int main(int argc, char *argv[]) {
                             std::cout << "Person Attributes results: " << output_attribute_string << std::endl;
                             std::cout << "Person top color: " << resPersAttrAndColor.top_color << std::endl;
                             std::cout << "Person bottom color: " << resPersAttrAndColor.bottom_color << std::endl;
+                            
+                            // SHOW ALL INFORMATION
                             time_t now = time(0);
                             tm *ltm = localtime(&now);
                             std::cout << "[TIME]" << 1900+ltm->tm_year << "." << ltm->tm_mon << "." << ltm->tm_mday << " " << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec <<
@@ -887,7 +913,21 @@ int main(int argc, char *argv[]) {
                             ";[LOC]" << result.location.x << "," << result.location.y << "," << result.location.width << "," << result.location.height << 
                             ",[ACC]" << result.confidence << ",[COLOR_UP]" << resPersAttrAndColor.top_color << ",[COLOR_DOWN]" << resPersAttrAndColor.bottom_color <<
                             ",[ATT]" << output_attribute_string << std::endl;
+                            //
                         }
+                        std::string output_attribute_string;
+                        for (size_t i = 0; i < resPersAttrAndColor.attributes_strings.size(); ++i)
+                            if (resPersAttrAndColor.attributes_indicators[i])
+                                output_attribute_string += resPersAttrAndColor.attributes_strings[i] + ",";
+                        // SHOW ALL INFORMATION
+                        time_t now = time(0);
+                        tm *ltm = localtime(&now);
+                        std::cout << "[TIME]" << 1900+ltm->tm_year << "." << ltm->tm_mon << "." << ltm->tm_mday << " " << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec <<
+                        ";[ID]" << resPersReid << 
+                        ";[LOC]" << result.location.x << "," << result.location.y << "," << result.location.width << "," << result.location.height << 
+                        ",[ACC]" << result.confidence << ",[COLOR_UP]" << resPersAttrAndColor.top_color << ",[COLOR_DOWN]" << resPersAttrAndColor.bottom_color <<
+                        ",[ATT]" << output_attribute_string << std::endl;
+                        //
                     }
 
                     cv::rectangle(frame, result.location, cv::Scalar(0, 255, 0), 1);
