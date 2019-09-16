@@ -16,7 +16,10 @@ const chalk = require('chalk');
 //
 // Using the Azure CLI:
 // az iot hub device-identity show-connection-string --hub-name {YourIoTHubName} --device-id MyNodeDevice --output table
-var connectionString = 'connectionString';
+var fs = require('fs'); 
+var data = fs.readFileSync('connectionString.string', 'utf8');
+console.log(data);
+var connectionString = data;
 
 // Using the Node.js Device SDK for IoT Hub:
 //   https://github.com/Azure/azure-iot-sdk-node
@@ -47,6 +50,7 @@ function get_detected(str)
 function sendMessage()
 {
   // Simulate telemetry.
+
   var message = new Message(JSON.stringify({
     Detected_TIME: get_detected("[TIME]"),
     Detected_ID: get_detected("[ID]"),

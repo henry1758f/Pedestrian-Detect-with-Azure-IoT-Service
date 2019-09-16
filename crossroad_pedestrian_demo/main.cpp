@@ -398,7 +398,7 @@ struct PersonAttribsDetection : BaseDetection {
 
     AttributesAndColorPoints GetPersonAttributes() {
         static const std::vector<std::string> attributesVec = {
-                "is male", "has_bag", "has_backpack" , "has hat", "has longsleeves", "has longpants", "has longhair", "has coat_jacket"
+                "is_male", "has_bag", "has_backpack" , "has_hat", "has_longsleeves", "has_longpants", "has_longhair", "has_coat_jacket"
         };
 
         Blob::Ptr attribsBlob = request.GetBlob(outputNameForAttributes);
@@ -830,7 +830,7 @@ int main(int argc, char *argv[]) {
                            new global ID is assigned to the person. Otherwise, ID of
                            matched person is assigned to it. */
                         auto foundId = personReId.findMatchingPerson(reIdVector);
-                        resPersReid = "REID: " + std::to_string(foundId);
+                        resPersReid = "ID_" + std::to_string(foundId);
 
 
                         // Capture Person Image
