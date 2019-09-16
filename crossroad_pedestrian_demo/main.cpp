@@ -28,6 +28,7 @@
 #include "crossroad_pedestrian_demo.hpp"
 #include <ext_list.hpp>
 
+
 #define SYNNEX_DEBUG
 
 using namespace InferenceEngine;
@@ -846,7 +847,18 @@ int main(int argc, char *argv[]) {
                         try
                         {
                             personCapture = frame(cv::Rect(result.location.x, result.location.y, out_w ,out_h));
-                            imwrite( filename, personCapture );
+
+                            std::ifstream ifile(filename);
+                            if (ifile) {
+                              // The file exists, and is open for input
+                            }
+                            else
+                            {
+                                imwrite( filename, personCapture );
+
+                            }
+                            
+                            
                         }
                         catch(...) 
                         {
@@ -927,6 +939,24 @@ int main(int argc, char *argv[]) {
                         ";[LOC]" << result.location.x << "," << result.location.y << "," << result.location.width << "," << result.location.height << 
                         ",[ACC]" << result.confidence << ",[COLOR_UP]" << resPersAttrAndColor.top_color << ",[COLOR_DOWN]" << resPersAttrAndColor.bottom_color <<
                         ",[ATT]" << output_attribute_string << std::endl;
+                        
+                        std::string output_msg;
+                        std::string str_time  = " [TIME] " + std::to_string(1900+ltm->tm_year) + "." + std::to_string(ltm->tm_mon) + "." + std::to_string(ltm->tm_mday) + "."+ std::to_string(ltm->tm_hour) + ":" + std::to_string(ltm->tm_min) + ":" + std::to_string(ltm->tm_sec);
+                        //str_time = "[TIME]"+ str_time + ltm->tm_mon + "." + ltm->tm_mday + "." + ltm->tm_hour + ":" + ltm->tm_min + ":" + ltm->tm_sec;
+                        std::string id_str = " [ID] " + resPersReid;
+                        std::string loc_str = " [LOC] " + std::to_string(result.location.x) + "," + std::to_string(result.location.y) + "," + std::to_string(result.location.width) + "," + std::to_string(result.location.height);
+                        std::string acc_str = " [ACC] " + std::to_string(result.confidence);
+                        //std::string colorUP_str = ";[COLOR_UP]" + std::to_string(resPersAttrAndColor.top_color);
+                        //std::string colorDOWN_str = ";[COLOR_DOWN]" + std::to_string(resPersAttrAndColor.bottom_color);
+                        std::string att_str = " [ATT] " + output_attribute_string;
+
+                        std::string exe_arg = "node $HOME/SYNNEX_SW_Demo/crossroad_pedestrian_demo/azure_connection.js " + str_time + id_str + loc_str + acc_str + att_str;
+                        const char* str2 = exe_arg.c_str();
+                        int exe_rtn = system(str2);
+                        if(exe_rtn)
+                        {
+
+                        }
                         //
                     }
 
