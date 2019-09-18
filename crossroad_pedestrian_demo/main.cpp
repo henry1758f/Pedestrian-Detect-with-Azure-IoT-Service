@@ -29,7 +29,7 @@
 #include <ext_list.hpp>
 
 
-#define SYNNEX_DEBUG
+//#define SYNNEX_DEBUG
 
 using namespace InferenceEngine;
 
@@ -856,6 +856,16 @@ int main(int argc, char *argv[]) {
                             {
                                 imwrite( filename, personCapture );
 
+                                std::string ulp_arg = "node $HOME/SYNNEX_SW_Demo/crossroad_pedestrian_demo/azure_connection.js [FILE] " + filename + " [ID] " + resPersReid;
+                                const char* str_ulp = ulp_arg.c_str();
+#ifdef SYNNEX_DEBUG
+                                std::cout << "[SYNNEX_DEBUG] ulp_arg=" << ulp_arg << std::endl;
+#endif
+                                int ulp_rtn = system(str_ulp);
+                                if(ulp_rtn)
+                                {
+
+                                }
                             }
                             
                             
