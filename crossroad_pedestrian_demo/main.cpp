@@ -27,6 +27,7 @@
 #include <samples/ocv_common.hpp>
 #include "crossroad_pedestrian_demo.hpp"
 #include <ext_list.hpp>
+#include <thread>
 
 
 //#define SYNNEX_DEBUG
@@ -608,6 +609,87 @@ struct Load {
 };
 
 
+int mkdir(std::string path)
+{
+    std::string sys_command = "mkdir -p " + path;
+    const char* str = sys_command.c_str();
+    int exe_rtn = system(str);
+    if(exe_rtn)
+    {
+ 
+        return 0;
+    }
+    else
+    {
+#if 1
+        slog::info << "[SYNNEX_DEBUG] Create folder : " << path << slog::endl;
+#endif 
+        return 1;
+    }
+}
+
+void pedestrian_capture(size_t x, size_t y, size_t p_width, size_t p_height, size_t width, size_t height, std::string resPersReid, cv::Mat frame)
+{
+    // Capture Person Image
+    cv::Mat personCapture;
+
+    std::string filepath = "./SYNNEX_SW_Demo/crossroad_pedestrian_demo/";
+    std::string filename = resPersReid +".jpg";
+    int check = mkdir(filepath);
+    if(!check)
+        std::cout << "[SYNNEX_ERROR] Cannot create " << filepath << " !! " << std::endl;
+    else
+        filename = filepath + filename;
+    size_t out_w = ((size_t)(x+p_width) > width) ? width - x -5 : p_width;
+    size_t out_h = ((size_t)(y+p_height) > height) ? height - y -5 : p_height;
+#ifdef SYNNEX_DEBUG
+    std::cout << "[SYNNEX_DEBUG] TIME w=" << out_w << std::endl;
+    std::cout << "[SYNNEX_DEBUG] TIME h=" << out_h << std::endl;
+#endif
+    try
+    {
+        personCapture = frame(cv::Rect(x, y, out_w ,out_h));
+
+        std::ifstream ifile(filename);
+        if (ifile) {
+          // The file exists, and is open for input
+        }
+        else
+        {
+            imwrite( filename, personCapture );
+
+            std::string ulp_arg = "node $HOME/SYNNEX_SW_Demo/crossroad_pedestrian_demo/azure_connection.js [FILE] " + filename + " [ID] " + resPersReid;
+            const char* str_ulp = ulp_arg.c_str();
+#ifdef SYNNEX_DEBUG
+            std::cout << "[SYNNEX_DEBUG] ulp_arg=" << ulp_arg << std::endl;
+#endif
+            int ulp_rtn = system(str_ulp);
+            if(ulp_rtn)
+            {
+
+            }
+        }
+                            
+                            
+    }
+    catch(...) 
+    {
+        std::cout << "[SYNNEX_ERROR] exception!!" << std::endl;
+    }
+
+
+}
+
+void info_show_update(std::string exe_arg)
+{
+    std::cout << exe_arg << std::endl;
+    const char* str2 = exe_arg.c_str();
+    int exe_rtn = system(str2);
+    if(exe_rtn)
+    {
+
+    }
+}
 
 int main(int argc, char *argv[]) {
     try {
@@ -834,47 +916,9 @@ int main(int argc, char *argv[]) {
 
 
                         // Capture Person Image
-                        cv::Mat personCapture;
+                        std::thread capture_sava_n_upload(pedestrian_capture, result.location.x, result.location.y, result.location.width, result.location.height, width, height, resPersReid, frame);
+                        capture_sava_n_upload.detach();
 
-                        std::string filename;
-                        filename = "./" + resPersReid +".jpg";
-                        size_t out_w = ((size_t)(result.location.x+result.location.width) > width) ? width - result.location.x -5 : result.location.width;
-                        size_t out_h = ((size_t)(result.location.y+result.location.height) > height) ? height - result.location.y -5 : result.location.height;
-#ifdef SYNNEX_DEBUG
-                        std::cout << "[SYNNEX_DEBUG] TIME w=" << out_w << std::endl;
-                        std::cout << "[SYNNEX_DEBUG] TIME h=" << out_h << std::endl;
-#endif
-                        try
-                        {
-                            personCapture = frame(cv::Rect(result.location.x, result.location.y, out_w ,out_h));
-
-                            std::ifstream ifile(filename);
-                            if (ifile) {
-                              // The file exists, and is open for input
-                            }
-                            else
-                            {
-                                imwrite( filename, personCapture );
-
-                                std::string ulp_arg = "node $HOME/SYNNEX_SW_Demo/crossroad_pedestrian_demo/azure_connection.js [FILE] " + filename + " [ID] " + resPersReid;
-                                const char* str_ulp = ulp_arg.c_str();
-#ifdef SYNNEX_DEBUG
-                                std::cout << "[SYNNEX_DEBUG] ulp_arg=" << ulp_arg << std::endl;
-#endif
-                                int ulp_rtn = system(str_ulp);
-                                if(ulp_rtn)
-                                {
-
-                                }
-                            }
-                            
-                            
-                        }
-                        catch(...) 
-                        {
-                            std::cout << "[SYNNEX_ERROR] exception!!" << std::endl;
-                        }
-                        //
                         
                     }
 
@@ -944,12 +988,12 @@ int main(int argc, char *argv[]) {
                         // SHOW ALL INFORMATION
                         time_t now = time(0);
                         tm *ltm = localtime(&now);
-                        std::cout << "[TIME]" << 1900+ltm->tm_year << "." << ltm->tm_mon << "." << ltm->tm_mday << " " << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec <<
+                        /*std::cout << "[TIME]" << 1900+ltm->tm_year << "." << ltm->tm_mon << "." << ltm->tm_mday << " " << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec <<
                         ";[ID]" << resPersReid << 
                         ";[LOC]" << result.location.x << "," << result.location.y << "," << result.location.width << "," << result.location.height << 
                         ",[ACC]" << result.confidence << ",[COLOR_UP]" << resPersAttrAndColor.top_color << ",[COLOR_DOWN]" << resPersAttrAndColor.bottom_color <<
                         ",[ATT]" << output_attribute_string << std::endl;
-                        
+                        */
                         std::string output_msg;
                         std::string str_time  = " [TIME] " + std::to_string(1900+ltm->tm_year) + "." + std::to_string(ltm->tm_mon) + "." + std::to_string(ltm->tm_mday) + "."+ std::to_string(ltm->tm_hour) + ":" + std::to_string(ltm->tm_min) + ":" + std::to_string(ltm->tm_sec);
                         //str_time = "[TIME]"+ str_time + ltm->tm_mon + "." + ltm->tm_mday + "." + ltm->tm_hour + ":" + ltm->tm_min + ":" + ltm->tm_sec;
@@ -961,12 +1005,8 @@ int main(int argc, char *argv[]) {
                         std::string att_str = " [ATT] " + output_attribute_string;
 
                         std::string exe_arg = "node $HOME/SYNNEX_SW_Demo/crossroad_pedestrian_demo/azure_connection.js " + str_time + id_str + loc_str + acc_str + att_str;
-                        const char* str2 = exe_arg.c_str();
-                        int exe_rtn = system(str2);
-                        if(exe_rtn)
-                        {
-
-                        }
+                        std::thread send_msg_n_update(info_show_update, exe_arg);
+                        send_msg_n_update.detach();
                         //
                     }
 

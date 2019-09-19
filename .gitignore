@@ -6,3 +6,4 @@ crossroad_pedestrian_demo/node_modules/*
 crossroad_pedestrian_demo/package-lock.json
 build/*.jpg
 *.string
+build/SYNNEX_SW_Demo
