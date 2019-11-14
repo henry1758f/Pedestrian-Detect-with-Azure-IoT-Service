@@ -25,10 +25,42 @@ TO BE DONE.
           git clone https://github.com/henry1758f/SYNNEX_SW_Demo.git
    
    * ##### Build the demo code
+          cd $HOME/SYNNEX_SW_Demo/build
+          ./build_demos.sh
           
-          ./build/build_demos.sh
+   * ##### Download NN Models
+        The Demo needs three pre-trained models for inference
+        1. [person-vehicle-bike-detection-crossroad-0078](https://docs.openvinotoolkit.org/latest/_models_intel_person_vehicle_bike_detection_crossroad_0078_description_person_vehicle_bike_detection_crossroad_0078.html)
+        2. [person-attributes-recognition-crossroad-0230](https://docs.openvinotoolkit.org/latest/_models_intel_person_attributes_recognition_crossroad_0230_description_person_attributes_recognition_crossroad_0230.html)
+        3. [person-reidentification-retail-0079](https://docs.openvinotoolkit.org/latest/_models_intel_person_reidentification_retail_0079_description_person_reidentification_retail_0079.html)
+        
+        To Download these pre-trained models, you can use the scripts in [this repository](https://github.com/henry1758f/SYNNEX_work).
+        
+          cd ~ && git clone https://github.com/henry1758f/SYNNEX_work.git
+          $HOME/SYNNEX_work/Source/model_downloader.sh
+          
+        You'll see a list like this
+             
+             1. Download all from DLDT. (about 16.4G Bytes)
+             2. Typein specific DLDT model.
+             3. Typein an URL of the model.
+             4. Convert all public model to IR
+             5. EXIT the downloader.
+        Choose the option 2 by just input "2" and press Enter. then, copy following string and paste on the terminal to download the models.
+            
+         person-vehicle-bike-detection-crossroad-0078,person-attributes-recognition-crossroad-0230,person-reidentification-retail-0079
+        
     
    * ##### Excuted the demo
+          
+          $HOME/SYNNEX_SW_Demo/synnex_demo_build/intel64/Release/crossroad_pedestrian_demo \
+          -m $HOME/openvino_models/models/SYNNEX_demo/intel/person-vehicle-bike-detection-crossroad-0078/FP32/person-vehicle-bike-detection-crossroad-0078.xml \
+          -m_pa $HOME/openvino_models/models/SYNNEX_demo/intel/person-attributes-recognition-crossroad-0230/FP32/person-attributes-recognition-crossroad-0230.xml \
+          -m_reid $HOME/openvino_models/models/SYNNEX_demo/intel/person-reidentification-retail-0079/FP32/person-reidentification-retail-0079.xml \
+          -i cam \
+          -d CPU -d_pa CPU -d_reid CPU
+
+          
    
    ##### If you want to try remote monitoring with Azure IoT Hub, You have to 
    * ##### Install Node.js
@@ -38,13 +70,13 @@ TO BE DONE.
    
    * ##### Install some needed packages
    
-          cd crossroad_pedestrian_demo
-          npm install
+          cd $HOME/SYNNEX_SW_Demo/crossroad_pedestrian_demo && npm install
    
    * ##### [Create an IoT Hub](https://docs.microsoft.com/en-us/azure/iot-hub/quickstart-send-telemetry-node#create-an-iot-hub) 
    * ##### [Associate an Azure Storage account to IoT Hub](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-csharp-csharp-file-upload#associate-an-azure-storage-account-to-iot-hub)
-   * ##### Create a new file to save your connection string
-   ###### Create a file named "connectString.string" , then put your connection string to this file and saved. (The string file must be saved to where you're going to excute the demo.)
+   * ##### Register a Edge device on your IoT Hub
+   * ##### Create a new file to save your connection string of that Edge Device
+      ###### Create a file named "connectString.string" , then put your connection string to this file and saved. (The string file must be saved to where you're going to excute the demo.)
    
   
   
