@@ -35,4 +35,4 @@ fi
 mkdir -p $build_dir
 cd $build_dir
 cmake -DCMAKE_BUILD_TYPE=Release $demos_path
-make $NUM_THREADS
+make -lstdc++fs  $NUM_THREADS

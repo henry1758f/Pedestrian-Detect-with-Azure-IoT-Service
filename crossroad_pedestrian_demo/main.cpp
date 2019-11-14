@@ -20,17 +20,118 @@
 #include <string>
 #include <vector>
 #include <set>
-
+#include <ctime>
 #include <inference_engine.hpp>
 
 #include <samples/slog.hpp>
 #include <samples/ocv_common.hpp>
 #include "crossroad_pedestrian_demo.hpp"
 #include <ext_list.hpp>
+#include <thread>
 
-#define SYNNEX_DEBUG
+
+//#define SYNNEX_DEBUG
 
 using namespace InferenceEngine;
+
+typedef struct location
+{
+    int x = 0;
+    int y = 0;
+}location;
+typedef struct location_area
+{
+    location top;
+    location down;
+}location_area;
+
+typedef struct d_color
+{
+    int R = 0;
+    int G = 0;
+    int B = 0;
+}d_color;
+class D_person
+{
+public:
+    D_person();
+    void init()
+    {
+        _counter = 0;
+        _acc = 0.0;
+    }
+    void set_frametime(time_t time)
+    {
+        _frametime = ctime(&time);
+    }
+    void set_att(std::string s_att)
+    {
+        _att = s_att;
+    }
+    void set_colorUP(int r,int g,int b)
+    {
+        _color_up.R = r;
+        _color_up.G = g;
+        _color_up.B = b;
+    }
+    void set_colorDOWN(int r,int g,int b)
+    {
+        _color_down.R = r;
+        _color_down.G = g;
+        _color_down.B = b;
+    }
+    void set_acc(float f_acc)
+    {
+        _acc = f_acc;
+    }
+    void set_counter(int val)
+    {
+        _counter = val;
+    }
+    void add_counter()
+    {
+        _counter++;
+    }
+
+    int get_id()
+    {
+        return _id;
+    }
+    int get_counter()
+    {
+        return _counter;
+    }
+    std::string get_frametime()
+    {
+        return _frametime;
+    }
+    std::string get_att()
+    {
+        return _att;
+    }
+    d_color get_colorUP()
+    {
+        return _color_up;
+    }
+    d_color get_colorDOWN()
+    {
+        return _color_down;
+    }
+    float get_acc()
+    {
+        return _acc;
+    }
+     
+private:
+    long int _counter;
+    int _id;
+    std::string _frametime;
+    std::string _att;
+    d_color _color_up;
+    d_color _color_down;
+    float _acc;
+    location_area _area;
+};
 
 bool ParseAndCheckCommandLine(int argc, char *argv[]) {
     // ---------------------------Parsing and validation of input args--------------------------------------
@@ -298,7 +399,7 @@ struct PersonAttribsDetection : BaseDetection {
 
     AttributesAndColorPoints GetPersonAttributes() {
         static const std::vector<std::string> attributesVec = {
-                "is male", "has_bag", "has_backpack" , "has hat", "has longsleeves", "has longpants", "has longhair", "has coat_jacket"
+                "is_male", "has_bag", "has_backpack" , "has_hat", "has_longsleeves", "has_longpants", "has_longhair", "has_coat_jacket"
         };
 
         Blob::Ptr attribsBlob = request.GetBlob(outputNameForAttributes);
@@ -508,6 +609,87 @@ struct Load {
 };
 
 
+int mkdir(std::string path)
+{
+    std::string sys_command = "mkdir -p " + path;
+    const char* str = sys_command.c_str();
+    int exe_rtn = system(str);
+    if(exe_rtn)
+    {
+ 
+        return 0;
+    }
+    else
+    {
+#if 1
+        slog::info << "[SYNNEX_DEBUG] Create folder : " << path << slog::endl;
+#endif 
+        return 1;
+    }
+}
+
+void pedestrian_capture(size_t x, size_t y, size_t p_width, size_t p_height, size_t width, size_t height, std::string resPersReid, cv::Mat frame)
+{
+    // Capture Person Image
+    cv::Mat personCapture;
+
+    std::string filepath = "./SYNNEX_SW_Demo/crossroad_pedestrian_demo/";
+    std::string filename = resPersReid +".jpg";
+    int check = mkdir(filepath);
+    if(!check)
+        std::cout << "[SYNNEX_ERROR] Cannot create " << filepath << " !! " << std::endl;
+    else
+        filename = filepath + filename;
+    size_t out_w = ((size_t)(x+p_width) > width) ? width - x -5 : p_width;
+    size_t out_h = ((size_t)(y+p_height) > height) ? height - y -5 : p_height;
+#ifdef SYNNEX_DEBUG
+    std::cout << "[SYNNEX_DEBUG] TIME w=" << out_w << std::endl;
+    std::cout << "[SYNNEX_DEBUG] TIME h=" << out_h << std::endl;
+#endif
+    try
+    {
+        personCapture = frame(cv::Rect(x, y, out_w ,out_h));
+
+        std::ifstream ifile(filename);
+        if (ifile) {
+          // The file exists, and is open for input
+        }
+        else
+        {
+            imwrite( filename, personCapture );
+
+            std::string ulp_arg = "node $HOME/SYNNEX_SW_Demo/crossroad_pedestrian_demo/azure_connection.js [FILE] " + filename + " [ID] " + resPersReid;
+            const char* str_ulp = ulp_arg.c_str();
+#ifdef SYNNEX_DEBUG
+            std::cout << "[SYNNEX_DEBUG] ulp_arg=" << ulp_arg << std::endl;
+#endif
+            int ulp_rtn = system(str_ulp);
+            if(ulp_rtn)
+            {
+
+            }
+        }
+                            
+                            
+    }
+    catch(...) 
+    {
+        std::cout << "[SYNNEX_ERROR] exception!!" << std::endl;
+    }
+
+
+}
+
+void info_show_update(std::string exe_arg)
+{
+    std::cout << exe_arg << std::endl;
+    const char* str2 = exe_arg.c_str();
+    int exe_rtn = system(str2);
+    if(exe_rtn)
+    {
+
+    }
+}
 
 int main(int argc, char *argv[]) {
     try {
@@ -730,10 +912,30 @@ int main(int argc, char *argv[]) {
                            new global ID is assigned to the person. Otherwise, ID of
                            matched person is assigned to it. */
                         auto foundId = personReId.findMatchingPerson(reIdVector);
-                        resPersReid = "REID: " + std::to_string(foundId);
+                        resPersReid = "ID_" + std::to_string(foundId);
+
+
+                        // Capture Person Image
+                        std::thread capture_sava_n_upload(pedestrian_capture, result.location.x, result.location.y, result.location.width, result.location.height, width, height, resPersReid, frame);
+                        capture_sava_n_upload.detach();
+
+                        
                     }
 
                     // --------------------------- Process outputs -----------------------------------------
+                    if (!resPersReid.empty()) {
+                        cv::putText(frame,
+                                    resPersReid,
+                                    cv::Point2f(static_cast<float>(result.location.x), static_cast<float>(result.location.y + 30)),
+                                    cv::FONT_HERSHEY_COMPLEX_SMALL,
+                                    0.6,
+                                    cv::Scalar(255, 255, 255));
+
+                        if (FLAGS_r) {
+                            std::cout << "Person Reidentification results:" << resPersReid << std::endl;
+
+                        }
+                    }
                     if (!resPersAttrAndColor.attributes_strings.empty()) {
                         cv::Rect image_area(0, 0, frame.cols, frame.rows);
                         cv::Rect tc_label(result.location.x + result.location.width, result.location.y,
@@ -768,20 +970,46 @@ int main(int argc, char *argv[]) {
                             std::cout << "Person Attributes results: " << output_attribute_string << std::endl;
                             std::cout << "Person top color: " << resPersAttrAndColor.top_color << std::endl;
                             std::cout << "Person bottom color: " << resPersAttrAndColor.bottom_color << std::endl;
+                            
+                            // SHOW ALL INFORMATION
+                            time_t now = time(0);
+                            tm *ltm = localtime(&now);
+                            std::cout << "[TIME]" << 1900+ltm->tm_year << "." << ltm->tm_mon << "." << ltm->tm_mday << " " << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec <<
+                            ";[ID]" << resPersReid << 
+                            ";[LOC]" << result.location.x << "," << result.location.y << "," << result.location.width << "," << result.location.height << 
+                            ",[ACC]" << result.confidence << ",[COLOR_UP]" << resPersAttrAndColor.top_color << ",[COLOR_DOWN]" << resPersAttrAndColor.bottom_color <<
+                            ",[ATT]" << output_attribute_string << std::endl;
+                            //
                         }
-                    }
-                    if (!resPersReid.empty()) {
-                        cv::putText(frame,
-                                    resPersReid,
-                                    cv::Point2f(static_cast<float>(result.location.x), static_cast<float>(result.location.y + 30)),
-                                    cv::FONT_HERSHEY_COMPLEX_SMALL,
-                                    0.6,
-                                    cv::Scalar(255, 255, 255));
+                        std::string output_attribute_string;
+                        for (size_t i = 0; i < resPersAttrAndColor.attributes_strings.size(); ++i)
+                            if (resPersAttrAndColor.attributes_indicators[i])
+                                output_attribute_string += resPersAttrAndColor.attributes_strings[i] + ",";
+                        // SHOW ALL INFORMATION
+                        time_t now = time(0);
+                        tm *ltm = localtime(&now);
+                        /*std::cout << "[TIME]" << 1900+ltm->tm_year << "." << ltm->tm_mon << "." << ltm->tm_mday << " " << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec <<
+                        ";[ID]" << resPersReid << 
+                        ";[LOC]" << result.location.x << "," << result.location.y << "," << result.location.width << "," << result.location.height << 
+                        ",[ACC]" << result.confidence << ",[COLOR_UP]" << resPersAttrAndColor.top_color << ",[COLOR_DOWN]" << resPersAttrAndColor.bottom_color <<
+                        ",[ATT]" << output_attribute_string << std::endl;
+                        */
+                        std::string output_msg;
+                        std::string str_time  = " [TIME] " + std::to_string(1900+ltm->tm_year) + "." + std::to_string(ltm->tm_mon) + "." + std::to_string(ltm->tm_mday) + "."+ std::to_string(ltm->tm_hour) + ":" + std::to_string(ltm->tm_min) + ":" + std::to_string(ltm->tm_sec);
+                        //str_time = "[TIME]"+ str_time + ltm->tm_mon + "." + ltm->tm_mday + "." + ltm->tm_hour + ":" + ltm->tm_min + ":" + ltm->tm_sec;
+                        std::string id_str = " [ID] " + resPersReid;
+                        std::string loc_str = " [LOC] " + std::to_string(result.location.x) + "," + std::to_string(result.location.y) + "," + std::to_string(result.location.width) + "," + std::to_string(result.location.height);
+                        std::string acc_str = " [ACC] " + std::to_string(result.confidence);
+                        //std::string colorUP_str = ";[COLOR_UP]" + std::to_string(resPersAttrAndColor.top_color);
+                        //std::string colorDOWN_str = ";[COLOR_DOWN]" + std::to_string(resPersAttrAndColor.bottom_color);
+                        std::string att_str = " [ATT] " + output_attribute_string;
 
-                        if (FLAGS_r) {
-                            std::cout << "Person Reidentification results:" << resPersReid << std::endl;
-                        }
+                        std::string exe_arg = "node $HOME/SYNNEX_SW_Demo/crossroad_pedestrian_demo/azure_connection.js " + str_time + id_str + loc_str + acc_str + att_str;
+                        std::thread send_msg_n_update(info_show_update, exe_arg);
+                        send_msg_n_update.detach();
+                        //
                     }
+
                     cv::rectangle(frame, result.location, cv::Scalar(0, 255, 0), 1);
                 }
             }
