@@ -1,4 +1,4 @@
-# SYNNEX_SW_Demo
+# OpenVINO Pedestrian Detect with Azure IoT Service
 
 ## What are these Demostrations ?
 ### 1. crossroad_pedestrian_demo
